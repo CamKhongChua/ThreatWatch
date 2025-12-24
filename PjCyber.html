@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404cyber | Open-Source Cybersecurity Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Added jsPDF for professional PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617;
+            overflow-x: hidden;
+            color: #e2e8f0;
+        }
+
+        .glass-nav {
+            background: rgba(2, 6, 23, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+        }
+
+        .cyber-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .cyber-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -20px rgba(59, 130, 246, 0.4);
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        #toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 999; }
+        .toast {
+            background: #1e293b; color: white; padding: 1rem 2rem;
+            border-left: 4px solid #3b82f6; border-radius: 0.5rem;
+            margin-top: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+        .page-view { display: none; }
+        .page-view.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #mobile-menu {
+            position: fixed;
+            inset: 0;
+            background: #020617;
+            z-index: 95;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+        }
+        #mobile-menu.active { display: flex; }
+        
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.2), transparent);
+        }
+
+        .img-container {
+            overflow: hidden;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #0f172a;
+            position: relative;
+        }
+        
+        .img-container img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            transition: transform 0.5s ease;
+        }
+
+        .img-container:hover img {
+            transform: scale(1.02);
+        }
+
+        /* Platform specific styles */
+        .stat-box {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-box::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .stat-box:hover::after { opacity: 1; }
+
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .bar-animate { transition: width 1s ease-in-out; }
+
+        /* Map Animation Points */
+        .map-point {
+            position: absolute;
+            width: 8px; height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ef4444;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.33); opacity: 1; }
+            80%, 100% { transform: scale(3); opacity: 0; }
+        }
+
+        /* Terminal Styles */
+        .terminal-window {
+            font-family: 'Fira Code', monospace;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+        .typing-cursor::after {
+            content: '▋';
+            animation: blink 1s step-start infinite;
+            color: #3b82f6;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-bg"></canvas>
+    <div id="toast-container"></div>
+
+    <!-- Navigation -->
+    <nav class="glass-nav fixed w-full z-[100] py-4 transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center space-x-3 group cursor-pointer" onclick="navigateTo('home')">
+                <div class="relative w-10 h-10 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-blue-500 rounded-lg blur opacity-20 group-hover:opacity-40 transition"></div>
+                    <i class="fas fa-shield-halved text-blue-500 text-2xl relative z-10"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-2xl font-black tracking-tighter text-white leading-none">404<span class="text-blue-500">cyber</span></span>
+                    <span class="text-[9px] uppercase tracking-[0.3em] text-blue-400 font-bold">Research & Solutions</span>
+                </div>
+            </div>
+            
+            <div class="hidden lg:flex items-center space-x-8 font-bold text-[11px] uppercase tracking-widest">
+                <a href="javascript:void(0)" onclick="navigateTo('home')" class="hover:text-blue-400 transition-colors">Home</a>
+                <a href="#about" onclick="navigateTo('home')" class="hover:text-blue-400 transition-colors">About</a>
+                <a href="#technology" onclick="navigateTo('home')" class="hover:text-blue-400 transition-colors">Technology</a>
+                <a href="#contact" onclick="navigateTo('home')" class="hover:text-blue-400 transition-colors">Contact</a>
+                <button onclick="navigateTo('explore')" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105">
+                    Launch Platform
+                </button>
+            </div>
+            
+            <button id="menu-btn" class="lg:hidden text-2xl text-white z-[101]">
+                <i class="fas fa-bars-staggered"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu">
+        <a href="javascript:void(0)" onclick="navigateTo('home')" class="text-2xl font-bold hover:text-blue-500 text-white">Home</a>
+        <a href="#about" onclick="navigateTo('home')" class="text-2xl font-bold hover:text-blue-500 text-white">About</a>
+        <a href="#technology" onclick="navigateTo('home')" class="text-2xl font-bold hover:text-blue-500 text-white">Technology</a>
+        <a href="#contact" onclick="navigateTo('home')" class="text-2xl font-bold hover:text-blue-500 text-white">Contact</a>
+        <button onclick="navigateTo('explore')" class="px-8 py-3 bg-blue-600 rounded-xl font-bold text-white">Launch Platform</button>
+    </div>
+
+    <!-- MAIN PAGE CONTENT -->
+    <div id="view-home" class="page-view active">
+        <!-- Hero Section -->
+        <section id="home" class="relative min-h-screen flex items-center pt-20 overflow-hidden">
+            <div class="container mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center relative z-10">
+                <div class="space-y-8" data-aos="fade-right">
+                    <div class="inline-flex items-center space-x-3 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[10px] font-extrabold uppercase tracking-[0.2em]">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                        </span>
+                        <span>Open Source IDS/IPS Research</span>
+                    </div>
+                    <h1 class="text-6xl md:text-8xl font-black text-white leading-[1.05] tracking-tight">
+                        Secure What <br><span class="gradient-text">Matters Most</span>.
+                    </h1>
+                    <p class="text-xl text-slate-400 max-w-xl leading-relaxed font-light">
+                        Real-time threat detection and network visibility powered by Suricata and ELK Stack. Designed for research and enterprise security.
+                    </p>
+                    <div class="flex flex-wrap gap-5 pt-4">
+                        <button onclick="navigateTo('explore')" class="px-10 py-5 bg-blue-600 text-white font-extrabold rounded-2xl shadow-2xl hover:bg-blue-700 transition-all flex items-center gap-3 group">
+                            Explore Platform
+                            <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                        <button onclick="navigateTo('whitepaper')" class="px-10 py-5 bg-slate-900 border border-white/10 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all">
+                            Read Whitepaper
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="relative" data-aos="zoom-in">
+                    <div class="relative z-10 p-2 bg-gradient-to-br from-blue-500/20 to-transparent rounded-[2.5rem] border border-white/5 backdrop-blur-3xl">
+                        <div class="bg-slate-950/80 rounded-[2.2rem] overflow-hidden shadow-2xl border border-white/5">
+                            <div class="p-4 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
+                                <div class="flex space-x-1.5">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-red-500/40"></div>
+                                    <div class="w-2.5 h-2.5 rounded-full bg-yellow-500/40"></div>
+                                    <div class="w-2.5 h-2.5 rounded-full bg-green-500/40"></div>
+                                </div>
+                                <span class="text-[9px] font-mono text-slate-500 uppercase tracking-widest">suricata_monitor_v2</span>
+                            </div>
+                            <div id="log-console" class="p-8 space-y-6 font-mono text-[11px] h-80 overflow-hidden"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Project Introduction Video Section (Showcase Card) -->
+        <section id="project-intro" class="py-24 bg-slate-900/30 relative">
+            <div class="container mx-auto px-6 text-center relative z-10">
+                <h2 class="text-3xl font-black text-white mb-10 uppercase tracking-widest" data-aos="fade-up">Project Introduction</h2>
+                <div class="max-w-4xl mx-auto space-y-8" data-aos="zoom-in" data-aos-delay="200">
+                    
+                    <!-- 
+                        CÁCH DÙNG VIDEO GỐC (LOCAL VIDEO):
+                        Nếu bạn có file video, hãy đổi tên nó thành 'project_intro.mp4' 
+                        và đặt cùng thư mục với file index.html này.
+                        Sau đó, xóa comment (<!--) ở đoạn <video> bên dưới và xóa đoạn <a> bên dưới nó.
+                    -->
+                    
+                    <!-- 
+                    <video class="w-full aspect-video rounded-3xl shadow-2xl border border-blue-500/20" controls>
+                        <source src="project_intro.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video> 
+                    -->
+
+                    <!-- Currently using YouTube Link Fallback -->
+                    <div class="p-1 rounded-3xl bg-gradient-to-r from-blue-500/20 via-red-500/20 to-blue-500/20">
+                        <div class="bg-slate-950 rounded-[1.4rem] p-10 flex flex-col items-center justify-center space-y-6 border border-white/5">
+                            <div class="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.5)] animate-pulse">
+                                <i class="fas fa-play text-white text-3xl ml-1"></i>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-2xl font-bold text-white">Watch Implementation Demo</h3>
+                                <p class="text-slate-400 text-sm">Full breakdown of our Suricata & ELK integration.</p>
+                            </div>
+                            <a href="https://youtu.be/d_Ri0GHAlHI" target="_blank" class="inline-flex items-center gap-2 px-8 py-4 bg-white text-red-600 hover:bg-gray-100 text-sm font-black uppercase tracking-widest rounded-xl transition-all shadow-lg hover:shadow-white/20 transform hover:-translate-y-1">
+                                <span>Open on YouTube</span> <i class="fas fa-external-link-alt"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <div class="section-divider"></div>
+
+        <!-- About Us Section -->
+        <section id="about" class="py-32 relative">
+            <div class="container mx-auto px-6">
+                <div class="grid lg:grid-cols-2 gap-20 items-center">
+                    <div data-aos="fade-up">
+                        <h2 class="text-4xl font-black text-white mb-6 uppercase tracking-tighter">Who We Are</h2>
+                        <p class="text-slate-400 text-lg leading-relaxed mb-8">
+                            404cyber was founded by <strong>Nguyễn Viết Công</strong> and <strong>Đặng Ngọc An</strong>, two cybersecurity enthusiasts dedicated to bridging the gap between academic research and real-world security operations.
+                        </p>
+                        <div class="space-y-4">
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500"><i class="fas fa-bullseye"></i></div>
+                                <div>
+                                    <h4 class="text-white font-bold">Our Mission</h4>
+                                    <p class="text-slate-500 text-sm">To deliver accessible and powerful security solutions using open-source technologies.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500"><i class="fas fa-eye"></i></div>
+                                <div>
+                                    <h4 class="text-white font-bold">Our Vision</h4>
+                                    <p class="text-slate-500 text-sm">To become a trusted open-source cybersecurity innovation hub for IDS/IPS and SOC systems.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative" data-aos="fade-left">
+                        <div class="img-container shadow-2xl shadow-blue-500/10">
+                            <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1000" alt="404cyber Team Vision">
+                        </div>
+                        <div class="absolute -bottom-6 -right-6 p-6 bg-slate-900 border border-blue-500/30 rounded-2xl shadow-xl hidden md:block">
+                            <div class="text-3xl font-black text-blue-500">100%</div>
+                            <div class="text-[10px] uppercase font-bold text-slate-500 tracking-widest">Open Source</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Technology Section -->
+        <section id="technology" class="py-32 bg-slate-950/50">
+            <div class="container mx-auto px-6">
+                <div class="text-center max-w-3xl mx-auto mb-20" data-aos="fade-up">
+                    <h2 class="text-4xl font-black text-white mb-6 uppercase">Our Technology Stack</h2>
+                    <p class="text-slate-500">We leverage the world's most trusted open-source security tools.</p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8 mb-20">
+                    <div class="p-10 cyber-card rounded-3xl" data-aos="fade-up" data-aos-delay="100">
+                        <div class="flex items-center gap-3 mb-8">
+                            <i class="fas fa-microchip text-4xl text-blue-500"></i>
+                            <span class="text-2xl font-bold text-white">Suricata</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-white mb-4">Suricata Engine</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-6">High-performance, multi-threaded IDS/IPS engine with signature-based and anomaly detection capabilities.</p>
+                        <ul class="text-xs text-blue-400 space-y-2 font-mono">
+                            <li>> Deep Packet Inspection</li>
+                            <li>> Multi-threaded processing</li>
+                            <li>> Protocol identification</li>
+                        </ul>
+                    </div>
+                    <div class="p-10 cyber-card rounded-3xl" data-aos="fade-up" data-aos-delay="200">
+                        <div class="flex items-center gap-3 mb-8">
+                            <i class="fas fa-magnifying-glass text-4xl text-blue-500"></i>
+                            <span class="text-2xl font-bold text-white">ELK Stack</span>
+                        </div>
+                        <h4 class="text-xl font-bold text-white mb-4">Data Visualization</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-6">Centralized log management using Logstash for parsing, Elasticsearch for indexing, and Kibana for analytics.</p>
+                        <ul class="text-xs text-blue-400 space-y-2 font-mono">
+                            <li>> Real-time alerting</li>
+                            <li>> Interactive dashboards</li>
+                            <li>> Long-term data storage</li>
+                        </ul>
+                    </div>
+                    <div class="p-10 cyber-card rounded-3xl" data-aos="fade-up" data-aos-delay="300">
+                        <i class="fas fa-shield-virus text-4xl text-blue-500 mb-8 block"></i>
+                        <h4 class="text-xl font-bold text-white mb-4">Threat Intel</h4>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-6">Integrated rule sets from Emerging Threats (ET Open) to identify the latest attack vectors.</p>
+                        <ul class="text-xs text-blue-400 space-y-2 font-mono">
+                            <li>> Malware detection</li>
+                            <li>> Brute-force protection</li>
+                            <li>> Zero-day research</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- REPLACED: System Architecture with Terminal -->
+                <div class="max-w-4xl mx-auto mt-20" data-aos="fade-up">
+                    <div class="text-center mb-10">
+                        <h3 class="text-2xl font-bold text-white uppercase tracking-widest">Rapid Deployment</h3>
+                        <p class="text-slate-500 text-sm mt-2">Deploy the full stack in seconds with our CLI tools.</p>
+                    </div>
+                    <div class="rounded-xl overflow-hidden bg-[#0d1117] border border-slate-800 shadow-2xl terminal-window">
+                        <div class="flex items-center px-4 py-3 bg-[#161b22] border-b border-slate-800">
+                            <div class="flex space-x-2 mr-4">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            </div>
+                            <div class="flex-1 text-center text-xs font-mono text-slate-500">admin@404cyber-server:~</div>
+                        </div>
+                        <div class="p-6 font-mono text-sm text-slate-300 h-80 overflow-y-auto" id="deployment-terminal">
+                            <!-- Terminal content injected by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- EXPLORE PLATFORM PAGE CONTENT -->
+    <div id="view-explore" class="page-view pt-32 pb-20">
+        <div class="container mx-auto px-6">
+            <button onclick="navigateTo('home')" class="mb-10 flex items-center gap-2 text-blue-500 font-bold hover:text-white transition-colors group">
+                <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i> Return to Headquarters
+            </button>
+            
+            <header class="mb-12 text-center max-w-4xl mx-auto">
+                <div class="inline-block px-4 py-1 rounded-full bg-blue-900/30 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-widest mb-6">
+                    Security Operations Center
+                </div>
+                <h2 class="text-5xl md:text-6xl font-black text-white mb-6 uppercase tracking-tighter">Unified <span class="gradient-text">Defense Console</span></h2>
+                <p class="text-slate-400 text-lg font-light leading-relaxed">
+                    Experience the power of open-source security intelligence. Our integrated dashboard provides complete visibility into your network traffic, threats, and anomalies in real-time.
+                </p>
+            </header>
+
+            <!-- Key Metrics Grid with Live Simulation IDs -->
+            <div class="monitor-grid mb-12">
+                <div class="stat-box">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-slate-400 text-xs uppercase font-bold tracking-widest">Threats Blocked</span>
+                        <i class="fas fa-shield-alt text-blue-500"></i>
+                    </div>
+                    <div class="text-4xl font-black text-white" id="metric-threats">4,281</div>
+                    <div class="text-green-500 text-xs mt-2 flex items-center gap-1"><i class="fas fa-arrow-up"></i> <span id="metric-threats-trend">12%</span> vs last hour</div>
+                </div>
+                <div class="stat-box">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-slate-400 text-xs uppercase font-bold tracking-widest">Active Alerts</span>
+                        <i class="fas fa-bell text-red-500 animate-pulse"></i>
+                    </div>
+                    <div class="text-4xl font-black text-white" id="metric-alerts">23</div>
+                    <div class="text-red-500 text-xs mt-2">Requires Attention</div>
+                </div>
+                <div class="stat-box">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-slate-400 text-xs uppercase font-bold tracking-widest">Network Load</span>
+                        <i class="fas fa-network-wired text-purple-500"></i>
+                    </div>
+                    <div class="text-4xl font-black text-white"><span id="metric-load">1.2</span> <span class="text-lg text-slate-500">Gbps</span></div>
+                    <div class="text-slate-500 text-xs mt-2">Stable</div>
+                </div>
+                <div class="stat-box">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-slate-400 text-xs uppercase font-bold tracking-widest">System Status</span>
+                        <i class="fas fa-server text-green-500"></i>
+                    </div>
+                    <div class="text-4xl font-black text-white" id="metric-uptime">99.9%</div>
+                    <div class="text-green-500 text-xs mt-2">All Systems Operational</div>
+                </div>
+            </div>
+
+            <!-- Dashboard Visualization -->
+            <div class="grid lg:grid-cols-12 gap-8 mb-20">
+                <div class="lg:col-span-8 space-y-8">
+                    <!-- Main Dashboard View -->
+                    <div class="p-1 rounded-[2rem] bg-gradient-to-br from-blue-500/20 to-transparent border border-white/10" data-aos="fade-up">
+                        <div class="bg-slate-950 rounded-[1.9rem] overflow-hidden relative">
+                            <div class="bg-slate-900/80 px-6 py-4 border-b border-white/5 flex justify-between items-center relative z-10">
+                                <div class="flex gap-2">
+                                    <div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+                                    <div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                                    <div class="w-3 h-3 rounded-full bg-green-500/50"></div>
+                                </div>
+                                <span class="text-xs font-mono text-slate-500">Kibana :: Attack_Map_Global_View</span>
+                            </div>
+                            <div class="relative group h-96 bg-slate-900" id="map-container">
+                                <!-- Background World Map -->
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg" class="absolute inset-0 w-full h-full object-cover opacity-10" style="filter: invert(1);" alt="World Map">
+                                <!-- JS will inject "dots" here -->
+                                <div id="attack-map-dots" class="absolute inset-0 overflow-hidden"></div>
+                                
+                                <div class="absolute bottom-6 left-6 z-10 pointer-events-none">
+                                    <h4 class="text-white font-bold text-lg">Global Threat Heatmap</h4>
+                                    <p class="text-slate-400 text-xs">Real-time attack simulation active.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Analysis Views -->
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="cyber-card p-6 rounded-3xl" data-aos="fade-up" data-aos-delay="100">
+                            <h5 class="text-white font-bold mb-4 flex items-center gap-2"><i class="fas fa-chart-pie text-blue-500"></i> Protocol Analysis</h5>
+                            
+                            <!-- Dynamic Protocol Chart -->
+                            <div class="flex items-center justify-center h-40">
+                                <div class="flex gap-4 items-end h-32 w-full px-4 border-b border-white/10">
+                                    <div class="w-1/3 bg-blue-600 rounded-t-md bar-animate relative group" id="chart-bar-http" style="height: 60%">
+                                        <div class="absolute -top-6 w-full text-center text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition">HTTP</div>
+                                    </div>
+                                    <div class="w-1/3 bg-purple-600 rounded-t-md bar-animate relative group" id="chart-bar-ssh" style="height: 20%">
+                                        <div class="absolute -top-6 w-full text-center text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition">SSH</div>
+                                    </div>
+                                    <div class="w-1/3 bg-green-600 rounded-t-md bar-animate relative group" id="chart-bar-dns" style="height: 15%">
+                                        <div class="absolute -top-6 w-full text-center text-xs font-bold text-white opacity-0 group-hover:opacity-100 transition">DNS</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 space-y-3">
+                                <div class="flex justify-between text-xs text-slate-400"><span>HTTP/HTTPS</span> <span class="text-white font-bold" id="text-http">65%</span></div>
+                                <div class="flex justify-between text-xs text-slate-400"><span>SSH/FTP</span> <span class="text-white font-bold" id="text-ssh">20%</span></div>
+                                <div class="flex justify-between text-xs text-slate-400"><span>DNS/UDP</span> <span class="text-white font-bold" id="text-dns">15%</span></div>
+                            </div>
+                        </div>
+                        <div class="cyber-card p-6 rounded-3xl" data-aos="fade-up" data-aos-delay="200">
+                            <h5 class="text-white font-bold mb-4 flex items-center gap-2"><i class="fas fa-bug text-red-500"></i> Attack Vectors</h5>
+                            <div class="space-y-4">
+                                <div class="flex items-center gap-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition cursor-pointer">
+                                    <i class="fas fa-biohazard text-red-500"></i>
+                                    <div>
+                                        <div class="text-white text-sm font-bold">Malware Traffic</div>
+                                        <div class="text-slate-500 text-[10px]">Detected signature match</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl hover:bg-orange-500/20 transition cursor-pointer">
+                                    <i class="fas fa-door-open text-orange-500"></i>
+                                    <div>
+                                        <div class="text-white text-sm font-bold">Port Scanning</div>
+                                        <div class="text-slate-500 text-[10px]">Rapid SYN requests</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl hover:bg-yellow-500/20 transition cursor-pointer">
+                                    <i class="fas fa-database text-yellow-500"></i>
+                                    <div>
+                                        <div class="text-white text-sm font-bold">SQL Injection</div>
+                                        <div class="text-slate-500 text-[10px]">Payload analysis</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar Controls -->
+                <div class="lg:col-span-4 space-y-8">
+                    <div class="cyber-card p-8 rounded-3xl sticky top-28">
+                        <h4 class="text-xl font-bold text-white mb-6 uppercase tracking-wider">System Controls</h4>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Detection Mode</label>
+                                <div class="flex p-1 bg-slate-900 rounded-lg">
+                                    <button id="btn-ips" onclick="setDetectionMode('IPS')" class="flex-1 py-2 text-xs font-bold rounded-md bg-blue-600 text-white shadow-lg transition-all duration-300">IPS (Active)</button>
+                                    <button id="btn-ids" onclick="setDetectionMode('IDS')" class="flex-1 py-2 text-xs font-bold rounded-md text-slate-500 hover:text-white transition-all duration-300">IDS (Passive)</button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase block mb-2">Rule Sets</label>
+                                <div class="space-y-2">
+                                    <button onclick="toggleRule(this, 'ET Open')" class="w-full flex items-center justify-between p-3 bg-slate-900 rounded-xl border border-white/5 hover:border-blue-500/30 transition group">
+                                        <span class="text-sm text-white">ET Open Rules</span>
+                                        <div class="rule-toggle w-8 h-4 bg-green-500/20 rounded-full border border-green-500 flex items-center px-0.5 transition"><div class="toggle-dot w-3 h-3 bg-green-500 rounded-full ml-auto transition"></div></div>
+                                    </button>
+                                    <button onclick="toggleRule(this, 'Custom Sigs')" class="w-full flex items-center justify-between p-3 bg-slate-900 rounded-xl border border-white/5 hover:border-blue-500/30 transition group">
+                                        <span class="text-sm text-white">Custom Signatures</span>
+                                        <div class="rule-toggle w-8 h-4 bg-green-500/20 rounded-full border border-green-500 flex items-center px-0.5 transition"><div class="toggle-dot w-3 h-3 bg-green-500 rounded-full ml-auto transition"></div></div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="pt-6 border-t border-white/10">
+                                <h5 class="text-white font-bold mb-4 text-sm">Deployment Pipeline</h5>
+                                <div class="relative pl-6 space-y-6 border-l border-blue-500/20 ml-2">
+                                    <div class="relative">
+                                        <div class="absolute -left-[1.6rem] top-1 w-3 h-3 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50"></div>
+                                        <div class="text-xs font-bold text-blue-400">INGESTION</div>
+                                        <div class="text-xs text-slate-500 mt-1">Suricata AF_PACKET</div>
+                                    </div>
+                                    <div class="relative">
+                                        <div class="absolute -left-[1.6rem] top-1 w-3 h-3 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50"></div>
+                                        <div class="text-xs font-bold text-blue-400">PROCESSING</div>
+                                        <div class="text-xs text-slate-500 mt-1">Logstash Normalization</div>
+                                    </div>
+                                    <div class="relative">
+                                        <div class="absolute -left-[1.6rem] top-1 w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/50 animate-pulse"></div>
+                                        <div class="text-xs font-bold text-green-400">VISUALIZATION</div>
+                                        <div class="text-xs text-slate-500 mt-1">Elasticsearch & Kibana</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button onclick="exportReport()" class="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-sm transition-colors border border-white/5 flex items-center justify-center gap-2 mt-4 hover:shadow-lg hover:shadow-blue-500/10">
+                                <i class="fas fa-file-export"></i> Export Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WHITEPAPER PAGE CONTENT -->
+    <div id="view-whitepaper" class="page-view pt-32 pb-20">
+        <div class="container mx-auto px-6 max-w-4xl">
+            <button onclick="navigateTo('home')" class="mb-10 flex items-center gap-2 text-blue-500 font-bold hover:text-white transition-colors">
+                <i class="fas fa-chevron-left"></i> Return to Home
+            </button>
+
+            <article class="bg-slate-900/40 border border-white/5 p-12 md:p-20 rounded-[3rem] shadow-2xl relative">
+                <h1 class="text-4xl md:text-5xl font-black text-white mb-8 border-b border-white/5 pb-8">Research Report: <br><span class="text-blue-500 italic">Advanced Network Defense</span></h1>
+                
+                <div class="space-y-12 text-slate-400 leading-relaxed text-lg font-light">
+                    <section>
+                        <h3 class="text-white font-bold text-xl mb-4 uppercase text-blue-400">01. Overview</h3>
+                        <p>Our research focuses on high-performance intrusion detection. By integrating Suricata v7.0 with distributed indexing (Elasticsearch), we achieved a 40% reduction in detection latency compared to legacy single-threaded systems.</p>
+                    </section>
+                    <section class="p-8 bg-blue-500/5 border border-blue-500/10 rounded-2xl italic">
+                        <h3 class="text-white font-bold text-xl mb-4 uppercase text-blue-400">02. Methodology</h3>
+                        <p>We utilize the ET Open ruleset alongside custom anomaly detection logic to monitor the East-West traffic within experimental SOC environments.</p>
+                    </section>
+                    <section>
+                         <h3 class="text-white font-bold text-xl mb-4 uppercase text-blue-400">03. Key Results</h3>
+                         <p>The system demonstrated 99.8% accuracy in identifying SQL injection and Cross-Site Scripting (XSS) patterns in real-time under high traffic loads (up to 10Gbps).</p>
+                    </section>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <!-- Footer / Contact -->
+    <footer id="contact" class="bg-slate-950 pt-32 pb-12 border-t border-white/5">
+        <div class="container mx-auto px-6">
+            <div class="grid lg:grid-cols-3 gap-16 mb-20">
+                <div class="space-y-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 flex items-center justify-center bg-blue-600 rounded-lg shadow-lg shadow-blue-500/20">
+                             <i class="fas fa-shield-halved text-white text-xl"></i>
+                        </div>
+                        <span class="text-3xl font-black text-white">404<span class="text-blue-500">cyber</span></span>
+                    </div>
+                    <p class="text-slate-500 italic text-sm">"Defending digital borders through open-source innovation."</p>
+                </div>
+                <div class="space-y-6">
+                    <h6 class="text-white font-bold uppercase tracking-widest text-xs">Contact Us</h6>
+                    <ul class="space-y-4 text-slate-500 text-sm font-mono">
+                        <li><i class="fas fa-envelope text-blue-500 mr-2"></i> vietcong0212@gmail.com</li>
+                        <li><i class="fas fa-location-dot text-blue-500 mr-2"></i> Da Nang, Viet Nam</li>
+                    </ul>
+                </div>
+                <div class="space-y-6">
+                    <h6 class="text-white font-bold uppercase tracking-widest text-xs">Newsletter</h6>
+                    <div class="flex">
+                        <input type="text" placeholder="Email Address" class="bg-slate-900 border border-white/10 rounded-l-lg px-4 py-2 w-full focus:outline-none focus:border-blue-500 text-sm text-white">
+                        <button onclick="showToast('Subscription active.')" class="bg-blue-600 px-6 py-2 rounded-r-lg font-bold text-xs text-white">JOIN</button>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center pt-12 border-t border-white/5">
+                <p class="text-slate-600 text-[9px] uppercase font-bold tracking-[0.4em]">
+                    &copy; 2025 404cyber. FOUNDED BY NGUYEN VIET CONG & DANG NGOC AN.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 1000, once: true });
+
+        // NAVIGATION LOGIC
+        function navigateTo(viewId) {
+            const views = document.querySelectorAll('.page-view');
+            views.forEach(view => view.classList.remove('active'));
+            
+            const targetView = document.getElementById('view-' + viewId);
+            if (targetView) targetView.classList.add('active');
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Close mobile menu safely
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu && mobileMenu.classList.contains('active')) {
+                toggleMenu();
+            }
+
+            showToast('Navigation: ' + viewId.toUpperCase());
+        }
+
+        // Mobile Menu Toggle
+        const menuBtn = document.getElementById('menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        function toggleMenu() {
+            if (!mobileMenu || !menuBtn) return;
+            mobileMenu.classList.toggle('active');
+            const icon = menuBtn.querySelector('i');
+            if (icon) {
+                icon.classList.toggle('fa-bars-staggered');
+                icon.classList.toggle('fa-xmark');
+            }
+        }
+
+        if (menuBtn) menuBtn.addEventListener('click', toggleMenu);
+
+        // Toast Notification System
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-bolt-lightning mr-2 text-blue-400"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+
+        // --- DASHBOARD SIMULATION LOGIC ---
+
+        // 1. Live Metric Updates
+        let threatsCount = 4281;
+        setInterval(() => {
+            // Increment threats randomly
+            threatsCount += Math.floor(Math.random() * 3); 
+            const threatEl = document.getElementById('metric-threats');
+            if(threatEl) threatEl.innerText = threatsCount.toLocaleString();
+
+            // Fluctuate Alerts
+            const alertEl = document.getElementById('metric-alerts');
+            if(alertEl) {
+                const current = parseInt(alertEl.innerText);
+                const variation = Math.floor(Math.random() * 3) - 1; // -1, 0, 1
+                const nextVal = Math.max(15, Math.min(35, current + variation));
+                alertEl.innerText = nextVal;
+                // Change color logic
+                if(nextVal > 28) alertEl.classList.replace('text-white', 'text-red-500');
+                else alertEl.classList.replace('text-red-500', 'text-white');
+            }
+
+            // Fluctuate Network Load
+            const loadEl = document.getElementById('metric-load');
+            if(loadEl) {
+                const load = (1.0 + Math.random() * 0.8).toFixed(1);
+                loadEl.innerText = load;
+            }
+
+            // Animate Protocol Bars & Sync Text
+            // Randomly distribute ~100% total
+            let h = Math.floor(50 + Math.random() * 20); // 50-70%
+            let s = Math.floor(10 + Math.random() * 10); // 10-20%
+            let d = 100 - h - s; 
+
+            const barHttp = document.getElementById('chart-bar-http');
+            const barSsh = document.getElementById('chart-bar-ssh');
+            const barDns = document.getElementById('chart-bar-dns');
+            
+            const textHttp = document.getElementById('text-http');
+            const textSsh = document.getElementById('text-ssh');
+            const textDns = document.getElementById('text-dns');
+
+            if(barHttp && barSsh && barDns) {
+                barHttp.style.height = h + '%';
+                barSsh.style.height = s + '%';
+                barDns.style.height = d + '%';
+                
+                textHttp.innerText = h + '%';
+                textSsh.innerText = s + '%';
+                textDns.innerText = d + '%';
+            }
+
+            // Animate Map Dots (Increased frequency)
+            const mapContainer = document.getElementById('attack-map-dots');
+            if (mapContainer) {
+                // Generate 1-3 dots per cycle
+                const numDots = Math.floor(Math.random() * 3) + 1; 
+                for (let i = 0; i < numDots; i++) {
+                    setTimeout(() => {
+                        const dot = document.createElement('div');
+                        dot.className = 'map-point';
+                        // Limit range slightly to avoid edge clipping if needed, but 0-100 is fine with overflow hidden
+                        dot.style.left = (Math.random() * 100) + '%';
+                        dot.style.top = (Math.random() * 100) + '%';
+                        mapContainer.appendChild(dot);
+                        setTimeout(() => dot.remove(), 2000);
+                    }, Math.random() * 1000); // Random delay within the cycle
+                }
+            }
+
+        }, 1500);
+
+        // 2. Interactive System Controls
+        function setDetectionMode(mode) {
+            const btnIps = document.getElementById('btn-ips');
+            const btnIds = document.getElementById('btn-ids');
+            
+            const activeClasses = ['bg-blue-600', 'text-white', 'shadow-lg'];
+            const passiveClasses = ['text-slate-500', 'hover:text-white', 'bg-transparent', 'shadow-none'];
+
+            if(mode === 'IPS') {
+                btnIps.classList.add(...activeClasses);
+                btnIps.classList.remove('bg-transparent', 'text-slate-500');
+                
+                btnIds.classList.remove(...activeClasses);
+                btnIds.classList.add(...passiveClasses);
+                showToast('Switched to ACTIVE IPS Mode. Dropping packets.');
+            } else {
+                btnIds.classList.add(...activeClasses);
+                btnIds.classList.remove('bg-transparent', 'text-slate-500');
+                
+                btnIps.classList.remove(...activeClasses);
+                btnIps.classList.add(...passiveClasses);
+                showToast('Switched to PASSIVE IDS Mode. Logging only.');
+            }
+        }
+
+        function toggleRule(btn, ruleName) {
+            const toggle = btn.querySelector('.rule-toggle');
+            const dot = btn.querySelector('.toggle-dot');
+            
+            // Check current state via classes (heuristic)
+            const isActive = toggle.classList.contains('bg-green-500/20');
+            
+            if(isActive) {
+                // Turn OFF
+                toggle.classList.replace('bg-green-500/20', 'bg-slate-700');
+                toggle.classList.replace('border-green-500', 'border-slate-500');
+                dot.classList.replace('bg-green-500', 'bg-slate-400');
+                dot.classList.remove('ml-auto');
+                dot.classList.add('mr-auto'); // Move left
+                showToast(`${ruleName} Disabled.`);
+            } else {
+                // Turn ON
+                toggle.classList.replace('bg-slate-700', 'bg-green-500/20');
+                toggle.classList.replace('border-slate-500', 'border-green-500');
+                dot.classList.replace('bg-slate-400', 'bg-green-500');
+                dot.classList.remove('mr-auto');
+                dot.classList.add('ml-auto'); // Move right
+                showToast(`${ruleName} Enabled.`);
+            }
+        }
+
+        async function exportReport() {
+            showToast('Initializing Report Generation...');
+            
+            // Check if jspdf is loaded
+            if (!window.jspdf) {
+                // Fallback to text file if library fails
+                exportTextReport();
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFillColor(15, 23, 42); // slate-900 like
+            doc.rect(0, 0, 210, 40, 'F');
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.setFont("helvetica", "bold");
+            doc.text("404cyber SOC Report", 20, 25);
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("Generated: " + new Date().toLocaleString(), 140, 25);
+
+            // Body
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(16);
+            doc.text("Executive Summary", 20, 55);
+            
+            doc.setFontSize(12);
+            doc.text("This report provides a snapshot of the current security posture and", 20, 65);
+            doc.text("network traffic analysis detected by the 404cyber IDS/IPS platform.", 20, 71);
+
+            // Metrics
+            let threats = document.getElementById('metric-threats')?.innerText || "4,281";
+            let alerts = document.getElementById('metric-alerts')?.innerText || "23";
+            let load = document.getElementById('metric-load')?.innerText || "1.2";
+
+            doc.setFillColor(240, 240, 240);
+            doc.rect(20, 85, 170, 30, 'F');
+            
+            doc.setFont("helvetica", "bold");
+            doc.text("Threats Blocked", 30, 95);
+            doc.text("Active Alerts", 90, 95);
+            doc.text("Network Load", 150, 95);
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(14);
+            doc.setTextColor(220, 38, 38); // Red
+            doc.text(threats, 30, 105);
+            doc.text(alerts, 90, 105);
+            doc.setTextColor(37, 99, 235); // Blue
+            doc.text(load + " Gbps", 150, 105);
+
+            // Detailed Logs
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(16);
+            doc.text("Recent Incident Logs", 20, 135);
+            
+            doc.setFontSize(10);
+            doc.setFont("courier", "normal");
+            let y = 145;
+            const logs = [
+                "[CRITICAL] Signature Match: CVE-2023-38831 WinRAR Exploit detected from 192.168.1.105",
+                "[WARNING]  Suricata Engine: Packet drop rate increased to 0.05%",
+                "[BLOCK]    IPS Action: Blocked IP 185.220.101.43 (Known Malicious Host)",
+                "[INFO]     Logstash: Successfully indexed 45,000 events in last 5 min",
+                "[ALERT]    Network Anomaly: DNS Tunneling pattern identified on port 53",
+                "[SYSTEM]   Database integrity check passed. Elastic Cluster Status: GREEN"
+            ];
+            
+            logs.forEach(log => {
+                doc.text(new Date().toLocaleTimeString() + " " + log, 20, y);
+                y += 8;
+            });
+
+            // Footer
+            doc.setFont("helvetica", "italic");
+            doc.setFontSize(10);
+            doc.text("Confidential - Internal Use Only", 105, 280, null, null, "center");
+            doc.text("© 2025 404cyber Security Research", 105, 285, null, null, "center");
+
+            doc.save("404cyber_Security_Report.pdf");
+            showToast('Report downloaded successfully.');
+        }
+
+        function exportTextReport() {
+            // Fallback implementation
+            const content = `404CYBER SECURITY REPORT\n...`;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '404cyber_report.txt';
+            a.click();
+        }
+
+        // Live Log Simulator (Original Logic)
+        const logs = [
+            { type: 'IDS', text: 'Signature Match: CVE-2023-XXXX', color: 'red' },
+            { type: 'SYS', text: 'Suricata Heartbeat OK', color: 'blue' },
+            { type: 'IPS', text: 'Blocked IP: 45.23.1.9', color: 'red' },
+            { type: 'FLOW', text: 'Indexing logs to Elasticsearch', color: 'green' },
+            { type: 'NET', text: 'TLS Handshake detected / HTTPS', color: 'blue' }
+        ];
+
+        function addLog() {
+            const consoleBox = document.getElementById('log-console');
+            if (!consoleBox) return;
+            const log = logs[Math.floor(Math.random() * logs.length)];
+            const time = new Date().toLocaleTimeString();
+            const logEl = document.createElement('div');
+            logEl.className = `flex justify-between items-center text-${log.color}-400 border-b border-blue-500/10 pb-4`;
+            logEl.innerHTML = `<span><span class="font-bold">[${log.type}]</span> ${log.text}</span><span class="text-slate-600">${time}</span>`;
+            consoleBox.prepend(logEl);
+            if(consoleBox.children.length > 8) consoleBox.lastElementChild.remove();
+        }
+        setInterval(addLog, 2000);
+
+        // --- NEW TERMINAL SIMULATION LOGIC ---
+        const terminalCommands = [
+            { cmd: 'sudo 404cyber-cli status', output: 'System Status: ONLINE\n[+] Suricata Engine: Active (PID 1234)\n[+] Logstash: Active (PID 1235)\n[+] Elasticsearch: Green' },
+            { cmd: 'tail -n 5 /var/log/suricata/fast.log', output: '10/25/2025-10:00:01.123 [**] [1:2010935:2] ET POLICY Suspicious Inbound to MSSQL [**] [Classification: Potential Corporate Privacy Violation] [Priority: 1] {TCP} 192.168.1.5:49202 -> 10.0.0.5:1433' },
+            { cmd: 'docker-compose ps', output: 'Name              Command                  State    Ports\n---------------------------------------------------------------\n404_suricata      /docker-entrypoint.sh ...   Up\n404_elasticsearch /bin/tini -- /usr/local...  Up       9200/tcp\n404_kibana        /bin/tini -- /usr/local...  Up       5601/tcp' }
+        ];
+
+        async function typeWriter(text, element, speed = 50) {
+            for (let i = 0; i < text.length; i++) {
+                element.innerHTML += text.charAt(i);
+                await new Promise(r => setTimeout(r, speed));
+            }
+        }
+
+        async function runTerminalSimulation() {
+            const terminal = document.getElementById('deployment-terminal');
+            if (!terminal) return;
+
+            while (true) {
+                // Pick random command
+                const commandObj = terminalCommands[Math.floor(Math.random() * terminalCommands.length)];
+                
+                // Create command line
+                const cmdLine = document.createElement('div');
+                cmdLine.className = 'text-green-400 mb-1';
+                cmdLine.innerHTML = '<span class="text-blue-400">admin@404cyber-server:~$</span> <span class="typing-cursor"></span>';
+                terminal.appendChild(cmdLine);
+                
+                // Type command
+                const cursor = cmdLine.querySelector('.typing-cursor');
+                await typeWriter(commandObj.cmd, cursor);
+                cursor.classList.remove('typing-cursor'); // Stop blinking cursor on old line
+
+                // Wait a bit
+                await new Promise(r => setTimeout(r, 500));
+
+                // Show output
+                const outputLine = document.createElement('div');
+                outputLine.className = 'text-slate-400 mb-4 whitespace-pre-wrap';
+                outputLine.innerText = commandObj.output;
+                terminal.appendChild(outputLine);
+
+                // Auto scroll
+                terminal.scrollTop = terminal.scrollHeight;
+
+                // Wait before next command
+                await new Promise(r => setTimeout(r, 4000));
+            }
+        }
+
+        // Particle System
+        const canvas = document.getElementById('canvas-bg');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.speedX = Math.random() * 0.4 - 0.2;
+                    this.speedY = Math.random() * 0.4 - 0.2;
+                }
+                update() {
+                    this.x += this.speedX; this.y += this.speedY;
+                    if(this.x > canvas.width || this.x < 0) this.speedX *= -1;
+                    if(this.y > canvas.height || this.y < 0) this.speedY *= -1;
+                }
+                draw() {
+                    ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI*2); ctx.fill();
+                }
+            }
+            function init() {
+                resize();
+                particles = [];
+                for(let i=0; i<60; i++) particles.push(new Particle());
+            }
+            function animate() {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                particles.forEach(p => { p.update(); p.draw(); });
+                requestAnimationFrame(animate);
+            }
+            window.addEventListener('resize', () => { resize(); init(); });
+            init(); animate();
+        }
+
+        // Start simulations
+        runTerminalSimulation();
+    </script>
+</body>
+</html>
